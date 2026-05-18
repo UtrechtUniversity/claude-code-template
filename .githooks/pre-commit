@@ -1,0 +1,48 @@
+#!/bin/sh
+# Pre-commit hooks — enforces formatting and secrets hygiene.
+# Install: make install-hooks
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+
+# ── No .env files ──────────────────────────────────────────────
+if echo "$STAGED" | grep -qE '(^|/)\.env'; then
+  echo ""
+  echo "  pre-commit: .env files must not be committed."
+  echo ""
+  exit 1
+fi
+
+# ── Backend: ruff format + ruff check on staged .py ───────────
+# Format/lint the staged Python files only — fast, no docker.
+# Authoritative gate for ruff so agents don't have to run `make
+# lint` mid-iteration; see CLAUDE.md "Static checks during agent
+# sessions".
+PY=$(echo "$STAGED" | grep -E '^backend/.*\.py$' | sed 's|^backend/||')
+if [ -n "$PY" ]; then
+  (cd backend && uv run ruff format --check $PY && uv run ruff check $PY) || {
+    echo ""
+    echo "  pre-commit: ruff failed.  Run 'make format' to auto-fix."
+    echo ""
+    exit 1
+  }
+fi
+
+# ── Comment-density check — per issue #239 ────────────────────
+# Fail if a staged Python file added more comment/docstring lines
+# than code lines. Catches "essay added next to a one-line fix".
+PY_FULL=$(echo "$STAGED" | grep -E '^backend/.*\.py$')
+if [ -n "$PY_FULL" ]; then
+  python3 .githooks/check_comment_density.py $PY_FULL || exit 1
+fi
+
+# ── Frontend: prettier --check on staged ts/svelte/css/html ───
+# Authoritative gate for prettier; mirrors backend rationale.
+FE=$(echo "$STAGED" | grep -E '^frontend/src/.*\.(ts|svelte|css|html)$' | sed 's|^frontend/||')
+if [ -n "$FE" ]; then
+  (cd frontend && npx --no-install prettier --check --plugin prettier-plugin-svelte $FE) || {
+    echo ""
+    echo "  pre-commit: prettier failed.  Run 'make format' to auto-fix."
+    echo ""
+    exit 1
+  }
+fi

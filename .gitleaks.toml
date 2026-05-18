@@ -1,0 +1,12 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known false positives"
+
+# Add allowlist entries here when gitleaks reports false positives in
+# config files or test fixtures. Examples:
+#   paths = [ '''CLAUDE\.md$''' ]
+#   stopwords = [ "specific-string-known-to-be-safe" ]
+paths = []
+stopwords = []

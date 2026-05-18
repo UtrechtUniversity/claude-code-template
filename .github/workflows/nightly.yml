@@ -1,0 +1,228 @@
+name: Nightly slow tier
+
+# Slow-tier tests that don't fit the per-PR budget.  See CLAUDE.md
+# "Slow tier" for the marker contract and path-trigger map.
+#
+# Three jobs run in parallel:
+#   - backend-slow:           pytest -m slow on the full backend tree.
+#   - backend-testmon-refresh: full backend suite under pytest-testmon
+#                              to repopulate the per-test fingerprint
+#                              DB.  Bounds fingerprint staleness to
+#                              ≤24 h so the ci.yml fast tier can rely
+#                              on the testmon impact filter.
+#   - e2e-slow:               full Playwright suite — smoke + every
+#                             nightly-by-default spec.
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  release:
+    types: [published]
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  backend-slow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      DATABASE_URL: postgresql+asyncpg://app:app@localhost:5432/app
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install Python and dependencies
+        run: |
+          uv python install 3.12
+          uv sync --python 3.12 --extra dev
+
+      - name: Run @slow backend tests
+        run: uv run pytest -m slow --tb=short
+
+  # Repopulate the testmon fingerprint DB from a clean full-suite run.
+  # Bounds fingerprint staleness to ≤24 h so PRs can rely on testmon's
+  # impact filter.  Without nightly refresh, file renames and added
+  # transitive imports could leave stale fingerprints that cause PRs to
+  # wrongly deselect tests.
+  backend-testmon-refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      DATABASE_URL: postgresql+asyncpg://app:app@localhost:5432/app
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install Python and dependencies
+        run: |
+          uv python install 3.12
+          uv sync --python 3.12 --extra dev
+
+      - name: Reset fingerprint DB
+        # The point of refresh is to re-trace from scratch so dead
+        # fingerprints get evicted and new transitive deps captured.
+        run: rm -f .testmondata
+
+      - name: Refresh testmon fingerprints (full backend suite)
+        run: uv run pytest --tb=short -q --testmon
+
+      - name: Save refreshed testmon fingerprint DB
+        if: success() || failure()
+        uses: actions/cache/save@v4
+        with:
+          path: backend/.testmondata
+          key: testmon-backend-${{ runner.os }}-nightly-${{ github.sha }}
+
+  e2e-slow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      DATABASE_URL: postgresql+asyncpg://app:app@localhost:5432/app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          uv python install 3.12
+          uv sync --python 3.12 --extra dev
+
+      - name: Apply migrations
+        working-directory: backend
+        run: uv run alembic upgrade head
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm install --no-audit --no-fund
+
+      - name: Install Playwright browsers (chromium only)
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Start backend
+        working-directory: backend
+        run: |
+          uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          echo $! > /tmp/backend.pid
+
+      - name: Wait for backend health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/api/health > /dev/null; then
+              echo "Backend up"; exit 0
+            fi
+            sleep 1
+          done
+          exit 1
+
+      - name: Start frontend
+        working-directory: frontend
+        run: |
+          npm run dev -- --host 0.0.0.0 --port 5173 &
+          echo $! > /tmp/frontend.pid
+
+      - name: Wait for frontend to serve
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:5173/ > /dev/null; then
+              echo "Frontend up"; exit 0
+            fi
+            sleep 1
+          done
+          exit 1
+
+      - name: Run full Playwright suite
+        working-directory: frontend
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:5173
+        # Runs every spec under tests/e2e/, including the smoke set
+        # (re-runs harmless, keeps this a single "full suite green"
+        # signal).
+        run: npx playwright test
+
+      - name: Upload Playwright report and traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results-nightly
+          path: |
+            frontend/test-results/
+            frontend/playwright-report/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Stop services
+        if: always()
+        run: |
+          kill "$(cat /tmp/backend.pid 2>/dev/null)" 2>/dev/null || true
+          kill "$(cat /tmp/frontend.pid 2>/dev/null)" 2>/dev/null || true

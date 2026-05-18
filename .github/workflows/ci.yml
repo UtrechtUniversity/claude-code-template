@@ -1,0 +1,447 @@
+name: CI
+
+# Per-PR fast tier.  See CLAUDE.md "Change-scope test gauntlet" for the
+# layered filters: detect-scope → marker tier → path triggers + changed
+# files → testmon (backend) / vitest --changed (frontend).
+#
+# Slow tier runs nightly in .github/workflows/nightly.yml.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # First filter: classify the diff so single-side PRs skip the other
+  # side's gauntlet.  Outputs scope ∈ {docs, backend, frontend, full}.
+  # Allowlists must stay in lock-step with CLAUDE.md.
+  detect-scope:
+    runs-on: ubuntu-latest
+    outputs:
+      scope: ${{ steps.scope.outputs.scope }}
+      pt_backend_force_files:    ${{ steps.triggers.outputs.pt_backend_force_files }}
+      pt_backend_testmon_bypass: ${{ steps.triggers.outputs.pt_backend_testmon_bypass }}
+      pt_e2e_force_files:        ${{ steps.triggers.outputs.pt_e2e_force_files }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: scope
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.pull_request.base.sha }}" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+          else
+            base="HEAD~1"
+          fi
+          changed=$(git diff --name-only "$base"...HEAD)
+          docs=$(echo "$changed"     | grep -E  '^(docs/|openspec/|\.claude/|.*\.md$|LICENSE$|\.gitignore$|\.editorconfig$)' || true)
+          non_docs=$(echo "$changed" | grep -vE '^(docs/|openspec/|\.claude/|.*\.md$|LICENSE$|\.gitignore$|\.editorconfig$)' || true)
+          backend=$(echo "$non_docs" | grep -E  '^(backend/|scripts/contract_check\.py$)'                              || true)
+          frontend=$(echo "$non_docs"| grep -E  '^frontend/'                                                            || true)
+          other=$(echo "$non_docs"   | grep -vE '^(backend/|scripts/contract_check\.py$|frontend/)'                    || true)
+
+          if [ -z "$changed" ]; then
+            scope="full"
+          elif [ -n "$other" ]; then
+            scope="full"
+          elif [ -n "$backend" ] && [ -n "$frontend" ]; then
+            scope="full"
+          elif [ -n "$backend" ]; then
+            scope="backend"
+          elif [ -n "$frontend" ]; then
+            scope="frontend"
+          else
+            scope="docs"
+          fi
+          echo "scope=$scope" >> "$GITHUB_OUTPUT"
+          echo "::notice::Scope: $scope"
+
+      - id: triggers
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.pull_request.base.sha }}" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+          else
+            base="HEAD~1"
+          fi
+          eval "$(./scripts/path_triggers.sh "$base")"
+          echo "pt_backend_force_files=$PT_BACKEND_FORCE_FILES"       >> "$GITHUB_OUTPUT"
+          echo "pt_backend_testmon_bypass=$PT_BACKEND_TESTMON_BYPASS" >> "$GITHUB_OUTPUT"
+          echo "pt_e2e_force_files=$PT_E2E_FORCE_FILES"               >> "$GITHUB_OUTPUT"
+
+  backend-test:
+    needs: detect-scope
+    if: needs.detect-scope.outputs.scope == 'backend' || needs.detect-scope.outputs.scope == 'full'
+    runs-on: ubuntu-latest
+    services:
+      # Tests run against a real Postgres so they exercise the same
+      # driver path (asyncpg + SQLAlchemy 2.x) as production code.
+      # SQLite-in-memory would diverge on type behaviour (timezone-aware
+      # timestamps, JSON column semantics, etc.) and undermine the
+      # purpose of integration tests.
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      DATABASE_URL: postgresql+asyncpg://app:app@localhost:5432/app
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Cache uv venv
+        uses: actions/cache@v4
+        with:
+          path: |
+            backend/.venv
+            ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('backend/uv.lock', 'backend/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      # Testmon fingerprint DB.  Restore on PRs and main pushes;
+      # save only on main pushes so PR-specific fingerprints can't
+      # poison the next PR's restore-keys fallback.  Nightly refresh
+      # bounds staleness to ≤24 h (see nightly.yml).
+      - name: Restore testmon fingerprint DB
+        id: testmon-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: backend/.testmondata
+          key: testmon-backend-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            testmon-backend-${{ runner.os }}-
+
+      - name: Install Python and dependencies
+        run: |
+          uv python install 3.12
+          uv sync --python 3.12 --extra dev
+
+      - name: Lint (ruff check)
+        run: uv run ruff check src/ tests/
+
+      - name: Format check (ruff format)
+        run: uv run ruff format --check src/ tests/
+
+      - name: Type check (mypy)
+        run: uv run mypy
+
+      # Alembic guardrails.  Two failure modes worth a CI gate:
+      #   1. Multi-head — two PRs created sibling migrations off the
+      #      same parent.  Each PR's tests pass, but `alembic upgrade`
+      #      fails on main because the chain has branches.  Classic
+      #      multi-agent conflict.
+      #   2. Migrations don't apply cleanly to an empty DB.  Catches
+      #      typos and missing dependencies in newly-added migrations.
+      - name: Check Alembic single head
+        run: |
+          heads=$(uv run alembic heads | grep -c '^' || true)
+          if [ "$heads" -gt 1 ]; then
+            echo "::error::Alembic has $heads heads — resolve the branch before merging."
+            uv run alembic heads
+            exit 1
+          fi
+
+      - name: Apply migrations to empty DB
+        run: uv run alembic upgrade head
+
+      - name: Test (pytest)
+        timeout-minutes: 20
+        shell: bash
+        env:
+          PT_BACKEND_FORCE_FILES: ${{ needs.detect-scope.outputs.pt_backend_force_files }}
+          PT_BACKEND_TESTMON_BYPASS: ${{ needs.detect-scope.outputs.pt_backend_testmon_bypass }}
+          TESTMON_CACHE_HIT: ${{ steps.testmon-cache.outputs.cache-hit }}
+        run: |
+          set -e
+          if [ -n "$PT_BACKEND_TESTMON_BYPASS" ]; then
+            echo "::notice::testmon filter disabled — diff touched non-Python data deps"
+          elif [ -f .testmondata ]; then
+            echo "::notice::testmon DB restored — fast tier will deselect tests whose deps did not change"
+          else
+            echo "::notice::testmon DB cache miss — every test will run; fingerprints will be populated for next time"
+          fi
+
+          # Forced files run unfiltered — force means "must run", which
+          # overrides testmon's "skip if deps unchanged".
+          if [ -n "$PT_BACKEND_FORCE_FILES" ]; then
+            echo "::group::Forced files (unfiltered): $PT_BACKEND_FORCE_FILES"
+            uv run pytest --tb=short -q $PT_BACKEND_FORCE_FILES
+            echo "::endgroup::"
+          fi
+
+          # Everything else: drop @slow, apply testmon impact filter
+          # (unless bypass set), ignore already-forced files.
+          ignore_args=""
+          for f in $PT_BACKEND_FORCE_FILES; do
+            ignore_args="$ignore_args --ignore=$f"
+          done
+          if [ -n "$PT_BACKEND_TESTMON_BYPASS" ]; then
+            testmon_flag=""
+          else
+            testmon_flag="--testmon"
+          fi
+          echo "::group::Fast tier"
+          set +e
+          uv run pytest --tb=short -q -m "not slow" $testmon_flag $ignore_args
+          rc=$?
+          set -e
+          echo "::endgroup::"
+          # rc=5 ("no tests collected") is benign — testmon can deselect
+          # everything if no covered blocks changed.
+          if [ "$rc" -ne 0 ] && [ "$rc" -ne 5 ]; then
+            exit "$rc"
+          fi
+
+      - name: Save testmon fingerprint DB (main push only)
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          path: backend/.testmondata
+          key: testmon-backend-${{ runner.os }}-${{ github.sha }}
+
+  frontend-test:
+    needs: detect-scope
+    if: needs.detect-scope.outputs.scope == 'frontend' || needs.detect-scope.outputs.scope == 'full'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # `vitest run --changed <base>` shells out to git diff;
+          # default depth=1 leaves the PR base unreachable.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      # tsc + svelte-check run the full codebase on every run —
+      # they're fast and they cover --changed's blind spot for
+      # type-only edits (which Vite's runtime graph erases).
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Svelte check
+        run: npx svelte-check --tsconfig ./tsconfig.json --threshold error
+
+      - name: Test (vitest --changed)
+        # Walks Vite's static ESM module graph from each test file,
+        # intersects with the git diff vs base, and runs only the tests
+        # whose dependency closure reaches a changed file.  Empty
+        # changed-set is fine (exit 0, "No test files found") — tsc and
+        # svelte-check still ran, and the e2e job covers wired-up flow.
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.pull_request.base.sha }}" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+          else
+            base="HEAD~1"
+          fi
+          echo "::notice::vitest --changed base: $base"
+          npx vitest run --changed "$base"
+
+  e2e-test:
+    needs: detect-scope
+    # e2e is the integration safety net — runs for any non-docs PR
+    # regardless of side, since a single-side change can break the
+    # wired-up flow even when that side's unit tests pass.
+    if: needs.detect-scope.outputs.scope != 'docs'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      DATABASE_URL: postgresql+asyncpg://app:app@localhost:5432/app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Cache uv venv
+        uses: actions/cache@v4
+        with:
+          path: |
+            backend/.venv
+            ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('backend/uv.lock', 'backend/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          uv python install 3.12
+          uv sync --python 3.12 --extra dev
+
+      - name: Apply migrations
+        working-directory: backend
+        run: uv run alembic upgrade head
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm install --no-audit --no-fund
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright browsers (chromium only)
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Start backend
+        working-directory: backend
+        run: |
+          uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          echo $! > /tmp/backend.pid
+
+      - name: Wait for backend health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/api/health > /dev/null; then
+              echo "Backend up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Backend failed to start"
+          exit 1
+
+      - name: Start frontend
+        working-directory: frontend
+        env:
+          # In CI the Vite dev server proxies /api → localhost:8000
+          # (overrides the docker-compose default of backend:8000).
+          VITE_PROXY_TARGET: http://localhost:8000
+        run: |
+          nohup npm run dev -- --host 0.0.0.0 --port 5173 \
+            > /tmp/frontend.log 2>&1 &
+          echo $! > /tmp/frontend.pid
+
+      - name: Wait for frontend to serve
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:5173/ > /dev/null; then
+              echo "Frontend up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Frontend failed to start"
+          tail -50 /tmp/frontend.log 2>/dev/null || true
+          exit 1
+
+      - name: Run Playwright e2e tests
+        working-directory: frontend
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:5173
+          PT_E2E_FORCE_FILES: ${{ needs.detect-scope.outputs.pt_e2e_force_files }}
+        # Two invocations compose the per-PR e2e set:
+        #   1. Smoke tier — runs always.
+        #   2. Force-include — changed specs + path-triggered specs.
+        run: |
+          set +e
+          fail=0
+
+          echo "::group::e2e smoke tier"
+          npx playwright test tests/e2e/smoke.spec.ts
+          [ $? -ne 0 ] && fail=1
+          echo "::endgroup::"
+
+          if [ -n "$PT_E2E_FORCE_FILES" ]; then
+            echo "::group::e2e force-include files ($PT_E2E_FORCE_FILES)"
+            # shellcheck disable=SC2086 -- intentional word-splitting
+            npx playwright test $PT_E2E_FORCE_FILES
+            [ $? -ne 0 ] && fail=1
+            echo "::endgroup::"
+          fi
+
+          exit $fail
+
+      - name: Upload Playwright report and traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: |
+            frontend/test-results/
+            frontend/playwright-report/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Stop services
+        if: always()
+        run: |
+          kill "$(cat /tmp/backend.pid 2>/dev/null)" 2>/dev/null || true
+          kill "$(cat /tmp/frontend.pid 2>/dev/null)" 2>/dev/null || true
+
+  contract-check:
+    needs: detect-scope
+    # ~5 s job; runs on every non-docs change.  Catches frontend/backend
+    # surface-area drift even on single-side PRs that wouldn't trigger
+    # the other side's full test job.  Multi-agent failure mode: one
+    # agent renames an endpoint while another agent's frontend keeps
+    # the old name; neither side's unit tests fail in isolation.
+    if: needs.detect-scope.outputs.scope != 'docs'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify backend routes and frontend API calls agree
+        run: python3 scripts/contract_check.py

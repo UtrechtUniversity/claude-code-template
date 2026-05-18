@@ -1,0 +1,77 @@
+# Dev-only composition for the agent-coding template stack:
+#   db        Postgres 17, persistent volume, health-checked
+#   backend   FastAPI + SQLAlchemy async, hot-reload via src mount
+#   frontend  Svelte 5 + Vite, hot-reload via src mount
+#
+# Extend this file as your project grows. Production hardening
+# (multi-stage builds, non-root users, managed Postgres, read-only FS,
+# secret management) is out of scope for the template.
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+    ports:
+      - "${DB_HOST_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # Backend's depends_on waits on this; without a healthcheck
+      # uvicorn races Postgres and the first DB call fails.
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      # asyncpg driver for the app; alembic/env.py rewrites this to
+      # the sync psycopg2 driver at migration time (Alembic doesn't
+      # speak async).
+      DATABASE_URL: postgresql+asyncpg://app:app@db:5432/app
+    ports:
+      - "${BACKEND_HOST_PORT:-8000}:8000"
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/tests:/app/tests
+      - ./backend/alembic:/app/alembic
+      - ./backend/alembic.ini:/app/alembic.ini:ro
+      # Live tool config (ruff / mypy / pytest) without rebuild.
+      # Dependency edits in [project.dependencies] still need
+      # `docker compose build backend`.
+      - ./backend/pyproject.toml:/app/pyproject.toml:ro
+      # contract_check.py is invoked from backend tests via a
+      # repo-relative path; mount read-only so `make test` works
+      # without baking it into the image.
+      - ./scripts:/app/scripts:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      # Vite dev server proxies /api → backend:8000 (see vite.config.ts).
+      # VITE_API_BASE is read by the frontend API client; empty means
+      # "use same-origin /api", which the proxy handles in dev.
+      VITE_API_BASE: ""
+    ports:
+      - "${FRONTEND_HOST_PORT:-5173}:5173"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/tests:/app/tests
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+      - ./frontend/svelte.config.js:/app/svelte.config.js
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
