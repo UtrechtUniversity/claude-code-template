@@ -1,8 +1,10 @@
-# Agent-coding template
+# Claude Code template
 
-A starting point for projects where multiple coding agents work in parallel against the same codebase. Provides a working FastAPI + Postgres + Svelte stack with CI scaffolding aimed at the failure modes that show up when two agents have different context perspectives: scope detection, testmon, vitest `--changed`, e2e smoke/slow tiers, Alembic single-head check, frontend/backend contract check.
+A starting point for projects where one or more coding agents work in parallel against the same codebase. **The product is the working method** — the principles, documentation discipline, git/PR workflow, multi-agent integrity defenses, and agent pipeline captured in [`CLAUDE.md`](CLAUDE.md). That method is stack-agnostic.
 
-The `items` example exists to prove the stack is wired up. Replace it with your own subject.
+To make the method concrete and prove it runs, the repo also ships **one runnable worked example**: a FastAPI + Postgres + Svelte stack with CI scaffolding aimed at the failure modes that show up when two agents have different context perspectives — scope detection, testmon, vitest `--changed`, e2e smoke/slow tiers, Alembic single-head check, frontend/backend contract check. The `items` example proves the stack is wired up end-to-end.
+
+**Using a different stack?** (PHP, a data pipeline, a CLI, an existing codebase you're extending.) Keep `CLAUDE.md`, `docs/`, `.claude/`, and `openspec/`; delete `backend/` and `frontend/`; and re-implement the four CI ideas in your tooling. [`docs/ADAPTING.md`](docs/ADAPTING.md) walks through exactly that. Otherwise, replace the `items` example with your own subject.
 
 ## Stack
 
@@ -55,6 +57,8 @@ cd frontend && npm run test:e2e
 
 ## Day 2: make it yours
 
+> **Different stack?** If your project isn't a FastAPI+Svelte app, the steps below (which assume the shipped stack) are not your path — read [`docs/ADAPTING.md`](docs/ADAPTING.md) first. It tells you what to keep (`CLAUDE.md`, `docs/`, `.claude/`, `openspec/`), what to delete (`backend/`, `frontend/`), and how to re-implement the four CI ideas in your own tooling.
+
 1. **Pick a subject.** Replace the `items` example.  Delete:
    - `backend/src/app/routes/items.py`, `backend/src/app/models.py`, `backend/src/app/schemas.py`
    - `frontend/src/lib/Items.svelte`, `frontend/src/lib/api.ts`
@@ -67,7 +71,7 @@ cd frontend && npm run test:e2e
 
 3. **Rewrite the Project section of `CLAUDE.md`.**  It's labelled with a `TEMPLATE NOTE` to make it easy to find.
 
-4. **Reset `docs/DECISIONS.md`.**  Keep D1 (stack) and D2 (Alembic), since those are decisions of the template itself.  Add a D3+ for your own first decision.
+4. **Reset `docs/DECISIONS.md`.**  Keep D3 (methodology-first stance) if it still describes your repo. Keep D1 (stack) and D2 (Alembic) only if you keep the shipped stack; otherwise reset them. Add a D4+ for your own first decision.
 
 ## Layout
 
@@ -100,6 +104,7 @@ cd frontend && npm run test:e2e
 │   └── hooks/                   PostToolUse hook (issue-close reminder)
 ├── docs/
 │   ├── DECISIONS.md             architectural / product decisions
+│   ├── ADAPTING.md              how to apply the method to a different stack
 │   └── design/TEMPLATE.md       design-doc template
 ├── openspec/                    capability-spec workflow skeleton
 ├── CLAUDE.md                    agent-facing project guidance
@@ -111,6 +116,7 @@ cd frontend && npm run test:e2e
 | If you want to | Read |
 |---|---|
 | Understand what Claude reads at session start | `CLAUDE.md` |
+| Adapt the method to a non-FastAPI/Svelte stack (PHP, data pipeline, CLI, existing codebase) | `docs/ADAPTING.md` |
 | Add an architectural decision | `docs/DECISIONS.md` (format documented at the top) |
 | Add a new feature larger than a bugfix | `docs/design/TEMPLATE.md` (use `/design`) |
 | Understand the CI scope-detection / testmon / vitest --changed logic | `CLAUDE.md` → "Change-scope test gauntlet" |

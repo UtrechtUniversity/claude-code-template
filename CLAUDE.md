@@ -6,7 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 > **TEMPLATE NOTE — replace this section.** Describe your project in one paragraph: what it does, who it serves, what the MVP delivers. Keep it tight; if the reader wants more, point at `docs/`.
 
-Stack: FastAPI + Python backend, SQLAlchemy 2.x async + Alembic against Postgres, Svelte 5 + TypeScript + Vite frontend, all orchestrated via docker-compose. The deletable `items` example demonstrates the wired-up flow end-to-end — replace it with your own domain.
+**What this template is.** The product is the *working method* below — principles, doc discipline, git workflow, the multi-agent integrity defenses, and the agent pipeline. That method is stack-agnostic and is the part you keep no matter what you build.
+
+The repo also ships **one worked example stack** to make the method concrete and prove the wiring runs end-to-end: FastAPI + Python backend, SQLAlchemy 2.x async + Alembic against Postgres, Svelte 5 + TypeScript + Vite frontend, all via docker-compose, with a deletable `items` example. **If your project uses a different stack** (PHP, a data pipeline, a CLI, an existing codebase you're extending), the concrete commands and CI gauntlet below are illustrations, not requirements — read `docs/ADAPTING.md` for how to map the same ideas onto your stack, then delete `backend/` and `frontend/`.
 
 ## Principles
 
@@ -15,6 +17,8 @@ Stack: FastAPI + Python backend, SQLAlchemy 2.x async + Alembic against Postgres
 **Consistency over novelty.** Before introducing a new pattern, check `docs/DECISIONS.md` for existing decisions. If the new approach contradicts a settled decision, ask before proceeding. Record every new decision with rationale.
 
 **Ask when ambiguous.** If a task requires a decision not covered by existing docs, ask rather than guessing. Then record the answer in `docs/DECISIONS.md`.
+
+**Trust user observations on rendered output — reproduce at the level the user is looking at.** When the user reports wrong behaviour in a *rendered surface* (a web page, dashboard, PDF or report export, chart, generated document), treat it as a real bug by default. "Optical illusion", "rendering artifact", "stale cache", "could you zoom in?", "the data layer is correct" are suspicious first responses, not investigations. Verify by reproducing at the same level the user is looking at: if they are looking at a rendered PDF, render the PDF and inspect it; if they are looking at a page, load the page; if they are counting items on screen, count them on the rendered output, not on the input data. Data-level verification does **not** exonerate the transform / render / pipeline layer — bugs live there too. This rule applies to **rendered/visual output specifically**; for pure data, logs, git operations, contract checks, and CI signals, retain default confidence and follow the evidence.
 
 ## Before Starting ANY Implementation
 
@@ -135,6 +139,8 @@ Agents implementing work follow this cadence:
 Before pushing to an existing branch/PR, **always check if the PR has already been merged** via `gh pr view <n> --json state,mergedAt`.
 
 ## Change-scope test gauntlet
+
+> **Worked example, not a mandate.** Everything in this section is the gauntlet for *this template's* FastAPI+Svelte+Postgres stack. The transferable ideas are four: (1) **classify each PR by scope** and run only the relevant suites; (2) **impact-filter within a scope** so unchanged tests are skipped, with escape hatches for the cases a filter can't see; (3) **a cross-boundary contract check** so two sides can't drift apart silently; (4) **an integration test on single-side PRs**, because unit tests passing in isolation does not mean the wired-up flow works. Re-implement those four ideas in your stack's tooling — see `docs/ADAPTING.md`. The concrete `pytest`/`vitest`/`alembic` machinery below is one instantiation.
 
 Not every PR needs the full gauntlet. The `detect-scope` job in `.github/workflows/ci.yml` classifies each PR into one of four buckets and gates the other CI jobs accordingly. Run the same subset locally before filing.
 

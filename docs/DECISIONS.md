@@ -51,3 +51,17 @@ Each decision:
 **Consequences.** Two agents creating migrations off the same parent revision both pass their own tests, but CI's `alembic heads` check refuses the merge with explicit notice — exactly the conflict the template is built to catch. Schema rollback remains possible. The asyncpg → psycopg2 driver swap in `alembic/env.py` is a real gotcha agents will hit; it's documented inline.
 
 **Alternatives considered.** Skip migrations, regenerate schema each deploy: rejected — hides the multi-agent migration-conflict case the template is built to surface, and is unrealistic for any production system anyway. Alembic with `alembic check` only (no single-head check): rejected — `alembic check` verifies model/DB sync but does not catch sibling revisions; the multi-head case requires the explicit `alembic heads | wc -l` gate.
+
+## D3 — Methodology-first: the shipped stack is one worked example, not the product
+
+**Status:** accepted
+**Maturity:** stable
+**Date:** 2026-06-01
+
+**Context.** This template seeds agent-coding work across a wide range of projects that do not share a stack — some are PHP web applications, some are Python data pipelines or CLIs, many are existing codebases being extended rather than greenfield builds. A template that hard-bakes one stack as *the* template would force most adopters to delete more than they keep, and would obscure the part that actually transfers.
+
+**Decision.** The product is the **working method**: the principles, documentation discipline, git/PR workflow, the four multi-agent integrity ideas (scope classification, impact filtering with escape hatches, cross-boundary contract check, integration test on single-side PRs), the agent pipeline, and the slash commands/skills. The FastAPI+Svelte+Postgres stack (D1/D2) is retained at the repo root as **one runnable worked example** that keeps the template's own CI green and proves the wiring, but CLAUDE.md, the README, and `docs/ADAPTING.md` frame it as illustrative. Adopters on a different stack delete `backend/` and `frontend/` and re-implement the four ideas in their own tooling.
+
+**Consequences.** The method survives a stack swap; a PHP or data-pipeline adopter keeps CLAUDE.md, docs, `.claude/`, and the agent pipeline unchanged and rewrites only the concrete gauntlet. The cost is that the gauntlet documentation in CLAUDE.md describes machinery many adopters will not run verbatim — mitigated by the explicit "worked example, not a mandate" framing and `docs/ADAPTING.md`. The shipped stack is *not* physically isolated into `examples/`; keeping it at root means the template's own CI exercises it, which is worth the small framing cost (see ADAPTING.md for why a Moodle/PHP adopter still deletes it cleanly).
+
+**Alternatives considered.** Physically relocate `backend/`+`frontend/` into `examples/`: rejected — rewires every CI workflow, the Makefile, `contract_check.py`, and `path_triggers.sh` to non-root paths, and the template would no longer run its own gauntlet at root, weakening the "proves the wiring" value. Strip the demo app entirely and ship only docs: rejected — loses the runnable proof that the multi-agent defenses actually fire, which is the template's most persuasive artifact.
