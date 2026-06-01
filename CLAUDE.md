@@ -78,7 +78,7 @@ Test suites are also held back during iteration. Wait until the user has checked
 | `/audit-decisions` | To check if changes are consistent with all recorded decisions |
 | `/audit-security` | To check for OWASP, auth, permissions, and data exposure issues |
 | `/test-plan` | To generate test scenarios for a feature or change |
-| `/post-issue-transcript` | Post a Ken/Claude transcript as an issue comment at PR-open / issue-close |
+| `/post-issue-transcript` | Post a user/Claude transcript as an issue comment at PR-open / issue-close |
 | `/opsx:propose` | Propose a new capability change with full artifacts |
 | `/opsx:explore` | Think through ideas and clarify requirements before proposing |
 | `/opsx:apply` | Implement tasks from an OpenSpec change |

@@ -1,5 +1,5 @@
 ---
-description: Post a Ken/Claude conversation transcript as a comment on a GitHub issue — durable audit trail at PR-open / issue-close milestones
+description: Post a user/Claude conversation transcript as a comment on a GitHub issue — durable audit trail at PR-open / issue-close milestones
 argument-hint: "[issue-number] — issue to comment on (defaults to the issue this conversation is closing)"
 allowed-tools: ["Bash"]
 ---
@@ -29,7 +29,7 @@ Skip if a transcript was already posted in this session.
 For each turn in the conversation, in order:
 
 ```markdown
-**Ken:** <user prompt, quoted verbatim — except redact tokens, see below>
+**User:** <user prompt, quoted verbatim — except redact tokens, see below>
 
 **Claude (summary):** <1–3 sentences — what you did, what you found, what
 decision you made.  No code blocks, no decision-tree minutiae, just enough
@@ -42,27 +42,27 @@ knows.
 
 ### Redact tokens before posting — non-negotiable
 
-Ken sometimes pastes GitHub PATs or other secrets directly into prompts so
-Opus agents can use them in-session.  That is an in-session trust decision;
+Users sometimes paste GitHub PATs or other secrets directly into prompts so
+agents can use them in-session.  That is an in-session trust decision;
 **posting them as issue comments is not.**  Issue comments are durable,
 world-readable on GitHub, and indexed.  A token that lands in a comment is
 effectively published.
 
-Before posting, scrub each Ken-turn for token-like content and replace it
+Before posting, scrub each user-turn for token-like content and replace it
 with a placeholder.  Treat as a token any of:
 
 - GitHub PATs (`ghp_…`, `github_pat_…`, hex strings of ~40 chars in a token-shaped context)
 - Bearer tokens, API keys, `Authorization:` header values
 - AWS / GCP / Anthropic / OpenAI keys (`sk-…`, `AKIA…`, etc.)
 - Anything pasted with framing like "here's the token", "use this PAT", "auth:"
-- Long opaque strings whose purpose Ken described as auth/credential
+- Long opaque strings whose purpose the user described as auth/credential
 
 Replace with `[redacted token]` (or `[redacted GitHub PAT]` when the type is
 obvious).  Keep the surrounding prose intact so the conversation still
 reads.  When in doubt, redact — there is no cost to a false positive and
 the cost of a false negative is a leaked credential.
 
-This applies even if Ken's prompt was "post this to the issue" — the
+This applies even if the user's prompt was "post this to the issue" — the
 verbatim instruction never overrides the redaction rule.
 
 ## Steps

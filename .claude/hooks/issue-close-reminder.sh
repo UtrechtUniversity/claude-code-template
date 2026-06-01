@@ -3,7 +3,7 @@
 #
 # When the Bash command merged a PR or closed an issue on GitHub
 # (either via the `gh` CLI or a direct `gh api` call), emit a system
-# reminder telling the agent to post a Ken/Claude transcript on the
+# reminder telling the agent to post a user/Claude transcript on the
 # linked issue, per `.claude/commands/post-issue-transcript.md`.
 # Exit 2 routes stderr back into Claude's context as feedback
 # (non-blocking — the tool has already run).
