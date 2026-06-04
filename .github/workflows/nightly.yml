@@ -163,7 +163,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Install Playwright browsers (chromium only)
         working-directory: frontend

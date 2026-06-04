@@ -244,7 +244,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       # tsc + svelte-check run the full codebase on every run —
       # they're fast and they cover --changed's blind spot for
@@ -331,7 +331,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
