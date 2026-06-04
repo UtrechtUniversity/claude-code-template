@@ -58,6 +58,10 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+# Single session loop so the session-scoped async_engine's pooled
+# connections stay valid across tests (asyncpg binds them to a loop).
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 addopts = "-ra --strict-markers"
 markers = [
   "slow: tests that hit a real database or are otherwise too slow for the per-PR fast tier. Run nightly; pulled into PR via path triggers.",
