@@ -187,6 +187,10 @@ jobs:
 
       - name: Start frontend
         working-directory: frontend
+        env:
+          # In CI the Vite dev server proxies /api → localhost:8000
+          # (overrides the docker-compose default of backend:8000).
+          VITE_PROXY_TARGET: http://localhost:8000
         run: |
           npm run dev -- --host 0.0.0.0 --port 5173 &
           echo $! > /tmp/frontend.pid
