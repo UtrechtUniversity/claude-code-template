@@ -1,8 +1,12 @@
 import { defineConfig } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
+import { svelteTesting } from "@testing-library/svelte/vite";
 
 export default defineConfig({
-  plugins: [svelte()],
+  // svelteTesting only affects vitest runs: it forces browser-side
+  // Svelte resolution so render() doesn't pick the server entry
+  // ("mount(...) is not available on the server" under Vite >= 6).
+  plugins: [svelte(), svelteTesting()],
   server: {
     host: "0.0.0.0",
     port: 5173,
