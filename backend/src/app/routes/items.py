@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,15 +10,17 @@ from app.schemas import ItemCreate, ItemRead
 
 router = APIRouter()
 
+SessionDep = Annotated[AsyncSession, Depends(get_session)]
+
 
 @router.get("/", response_model=list[ItemRead])
-async def list_items(session: AsyncSession = Depends(get_session)) -> list[Item]:
+async def list_items(session: SessionDep) -> list[Item]:
     result = await session.execute(select(Item))
     return list(result.scalars().all())
 
 
 @router.post("/", response_model=ItemRead, status_code=201)
-async def create_item(body: ItemCreate, session: AsyncSession = Depends(get_session)) -> Item:
+async def create_item(body: ItemCreate, session: SessionDep) -> Item:
     item = Item(title=body.title)
     session.add(item)
     await session.commit()
