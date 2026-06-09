@@ -9,7 +9,6 @@
 *.swo
 .DS_Store
 .vscode/*
-!.vscode/settings.json
 
 # Python
 __pycache__/
@@ -46,3 +45,6 @@ Thumbs.db
 # Claude Code worktrees
 .claude/worktrees/
 .claude/scheduled_tasks.lock
+
+# UU-branded Marp theme — local only, not for forkers
+slides/themes/uu.css
