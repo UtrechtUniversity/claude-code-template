@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif">
+<defs>
+<marker id="aGray" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto"><path d="M1,1 L12,6 L1,11 Z" fill="#94A3B8"/></marker>
+<marker id="aViol" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto"><path d="M1,1 L12,6 L1,11 Z" fill="#7C3AED"/></marker>
+<marker id="aEmer" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto"><path d="M1,1 L12,6 L1,11 Z" fill="#059669"/></marker>
+</defs>
+
+<text x="80" y="74" font-size="40" fill="#1E293B" font-weight="700">Convolutional Neural Network (CNN)</text>
+<text x="80" y="108" font-size="20" fill="#64748B">Slides small learned filters across an image, building up from edges to textures to whole objects.</text>
+
+<!-- ===== input image: a cat ===== -->
+<rect x="80" y="250" width="170" height="170" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
+<!-- faint pixel grid -->
+<g stroke="#E2E8F0" stroke-width="1">
+<line x1="80" y1="284" x2="250" y2="284"/><line x1="80" y1="318" x2="250" y2="318"/><line x1="80" y1="352" x2="250" y2="352"/><line x1="80" y1="386" x2="250" y2="386"/>
+<line x1="114" y1="250" x2="114" y2="420"/><line x1="148" y1="250" x2="148" y2="420"/><line x1="182" y1="250" x2="182" y2="420"/><line x1="216" y1="250" x2="216" y2="420"/>
+</g>
+<!-- cat ears -->
+<path d="M126,312 L146,266 L170,312 Z" fill="#FBBF24" stroke="#D97706" stroke-width="2"/>
+<path d="M204,312 L184,266 L160,312 Z" fill="#FBBF24" stroke="#D97706" stroke-width="2"/>
+<!-- cat head -->
+<circle cx="165" cy="348" r="50" fill="#FBBF24" stroke="#D97706" stroke-width="2"/>
+<!-- eyes -->
+<circle cx="148" cy="342" r="7" fill="#1E293B"/>
+<circle cx="182" cy="342" r="7" fill="#1E293B"/>
+<!-- nose -->
+<path d="M159,360 L171,360 L165,368 Z" fill="#FB7185"/>
+<!-- whiskers -->
+<g stroke="#92400E" stroke-width="1.5" stroke-linecap="round">
+<line x1="165" y1="364" x2="118" y2="356"/><line x1="165" y1="366" x2="116" y2="368"/>
+<line x1="165" y1="364" x2="212" y2="356"/><line x1="165" y1="366" x2="214" y2="368"/>
+</g>
+<!-- sliding filter window -->
+<rect x="98" y="268" width="42" height="42" fill="none" stroke="#7C3AED" stroke-width="2.5"/>
+<line x1="112" y1="268" x2="112" y2="310" stroke="#7C3AED" stroke-width="1"/><line x1="126" y1="268" x2="126" y2="310" stroke="#7C3AED" stroke-width="1"/>
+<line x1="98" y1="282" x2="140" y2="282" stroke="#7C3AED" stroke-width="1"/><line x1="98" y1="296" x2="140" y2="296" stroke="#7C3AED" stroke-width="1"/>
+<text x="165" y="446" font-size="17" fill="#1E293B" font-weight="600" text-anchor="middle">input image</text>
+<text x="165" y="468" font-size="14" fill="#64748B" text-anchor="middle">a grid of pixel numbers</text>
+<text x="119" y="330" font-size="12" fill="#7C3AED" font-weight="700" text-anchor="middle">filter</text>
+
+<!-- band label -->
+<text x="600" y="200" font-size="17" fill="#7C3AED" font-weight="600" text-anchor="middle">convolution + pooling — repeated</text>
+<line x1="356" y1="214" x2="844" y2="214" stroke="#DDD6FE" stroke-width="2"/>
+
+<!-- arrow input -> stage A -->
+<line x1="258" y1="332" x2="352" y2="332" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" marker-end="url(#aGray)"/>
+
+<!-- ===== stage A: feature maps (edges) ===== -->
+<rect x="378" y="254" width="120" height="120" rx="8" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+<rect x="369" y="263" width="120" height="120" rx="8" fill="#EDE9FE" stroke="#7C3AED" stroke-width="2"/>
+<rect x="360" y="272" width="120" height="120" rx="8" fill="#DDD6FE" stroke="#7C3AED" stroke-width="2"/>
+<text x="420" y="470" font-size="17" fill="#1E293B" font-weight="600" text-anchor="middle">edges</text>
+
+<!-- arrow A -> B -->
+<line x1="505" y1="332" x2="552" y2="332" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" marker-end="url(#aGray)"/>
+
+<!-- ===== stage B: feature maps (textures) ===== -->
+<rect x="584" y="262" width="92" height="92" rx="7" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+<rect x="576" y="270" width="92" height="92" rx="7" fill="#EDE9FE" stroke="#7C3AED" stroke-width="2"/>
+<rect x="568" y="278" width="92" height="92" rx="7" fill="#EDE9FE" stroke="#7C3AED" stroke-width="2"/>
+<rect x="560" y="286" width="92" height="92" rx="7" fill="#DDD6FE" stroke="#7C3AED" stroke-width="2"/>
+<text x="606" y="470" font-size="17" fill="#1E293B" font-weight="600" text-anchor="middle">textures</text>
+
+<!-- arrow B -> C -->
+<line x1="682" y1="332" x2="736" y2="332" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" marker-end="url(#aGray)"/>
+
+<!-- ===== stage C: feature maps (object parts) ===== -->
+<rect x="770" y="270" width="66" height="66" rx="6" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+<rect x="763" y="277" width="66" height="66" rx="6" fill="#EDE9FE" stroke="#7C3AED" stroke-width="2"/>
+<rect x="756" y="284" width="66" height="66" rx="6" fill="#EDE9FE" stroke="#7C3AED" stroke-width="2"/>
+<rect x="749" y="291" width="66" height="66" rx="6" fill="#EDE9FE" stroke="#7C3AED" stroke-width="2"/>
+<rect x="742" y="298" width="66" height="66" rx="6" fill="#DDD6FE" stroke="#7C3AED" stroke-width="2"/>
+<text x="778" y="470" font-size="17" fill="#1E293B" font-weight="600" text-anchor="middle">shapes &amp; parts</text>
+
+<!-- arrow C -> flatten -->
+<line x1="842" y1="332" x2="876" y2="332" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" marker-end="url(#aGray)"/>
+
+<!-- ===== flatten ===== -->
+<g>
+<rect x="882" y="235" width="28" height="13" rx="2" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="1"/>
+<rect x="882" y="250" width="28" height="13" rx="2" fill="#DDD6FE" stroke="#CBD5E1" stroke-width="1"/>
+<rect x="882" y="265" width="28" height="13" rx="2" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="1"/>
+<rect x="882" y="280" width="28" height="13" rx="2" fill="#DDD6FE" stroke="#CBD5E1" stroke-width="1"/>
+<rect x="882" y="295" width="28" height="13" rx="2" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="1"/>
+<rect x="882" y="310" width="28" height="13" rx="2" fill="#DDD6FE" stroke="#CBD5E1" stroke-width="1"/>
+<rect x="882" y="325" width="28" height="13" rx="2" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="1"/>
+<rect x="882" y="340" width="28" height="13" rx="2" fill="#DDD6FE" stroke="#CBD5E1" stroke-width="1"/>
+<rect x="882" y="355" width="28" height="13" rx="2" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="1"/>
+<rect x="882" y="370" width="28" height="13" rx="2" fill="#DDD6FE" stroke="#CBD5E1" stroke-width="1"/>
+<rect x="882" y="385" width="28" height="13" rx="2" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="1"/>
+<rect x="882" y="400" width="28" height="13" rx="2" fill="#DDD6FE" stroke="#CBD5E1" stroke-width="1"/>
+</g>
+<text x="896" y="468" font-size="15" fill="#64748B" text-anchor="middle">flatten</text>
+
+<!-- arrow flatten -> output -->
+<line x1="916" y1="332" x2="952" y2="332" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" marker-end="url(#aGray)"/>
+
+<!-- ===== output: classification ===== -->
+<text x="1088" y="244" font-size="15" fill="#64748B" font-weight="600" text-anchor="middle">what it sees</text>
+<!-- cat (winner) -->
+<text x="1006" y="287" font-size="17" fill="#059669" font-weight="700" text-anchor="end">cat</text>
+<rect x="1016" y="272" width="160" height="22" rx="5" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+<rect x="1016" y="272" width="147" height="22" rx="5" fill="#059669"/>
+<text x="1184" y="289" font-size="14" fill="#059669" font-weight="700">0.92</text>
+<!-- dog -->
+<text x="1006" y="337" font-size="17" fill="#64748B" text-anchor="end">dog</text>
+<rect x="1016" y="322" width="160" height="22" rx="5" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>
+<rect x="1016" y="322" width="8" height="22" rx="5" fill="#CBD5E1"/>
+<text x="1184" y="339" font-size="14" fill="#94A3B8">0.05</text>
+<!-- fox -->
+<text x="1006" y="387" font-size="17" fill="#64748B" text-anchor="end">fox</text>
+<rect x="1016" y="372" width="160" height="22" rx="5" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>
+<rect x="1016" y="372" width="4" height="22" rx="5" fill="#CBD5E1"/>
+<text x="1184" y="389" font-size="14" fill="#94A3B8">0.02</text>
+<!-- bird -->
+<text x="1006" y="437" font-size="17" fill="#64748B" text-anchor="end">bird</text>
+<rect x="1016" y="422" width="160" height="22" rx="5" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>
+<rect x="1016" y="422" width="3" height="22" rx="5" fill="#CBD5E1"/>
+<text x="1184" y="439" font-size="14" fill="#94A3B8">0.01</text>
+
+<!-- low -> high level annotation -->
+<text x="600" y="510" font-size="16" fill="#64748B" font-style="italic" text-anchor="middle">low-level features &#8594; high-level features &#8594; a label</text>
+
+<!-- caption -->
+<circle cx="86" cy="600" r="6" fill="#7C3AED"/>
+<text x="100" y="606" font-size="18" fill="#64748B" font-style="italic">Each layer slides small learned filters over the image, combining nearby pixels into ever-richer features —</text>
+<text x="100" y="634" font-size="18" fill="#64748B" font-style="italic">early layers fire on edges, deeper layers on textures and object parts, until the last layer names what it sees.</text>
+<text x="100" y="662" font-size="18" fill="#64748B" font-style="italic">Filters are shared across the whole image and every patch is processed in parallel — the architecture behind the 2012 ImageNet leap.</text>
+</svg>

@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif">
+<defs><marker id="aGray" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto"><path d="M1,1 L12,6 L1,11 Z" fill="#94A3B8"/></marker><marker id="aTeal" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto"><path d="M1,1 L12,6 L1,11 Z" fill="#0D9488"/></marker><marker id="aRose" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto"><path d="M1,1 L12,6 L1,11 Z" fill="#E11D48"/></marker><marker id="aEmer" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto"><path d="M1,1 L12,6 L1,11 Z" fill="#059669"/></marker><marker id="aViol" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto"><path d="M1,1 L12,6 L1,11 Z" fill="#7C3AED"/></marker><marker id="aInk" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto"><path d="M1,1 L12,6 L1,11 Z" fill="#1E293B"/></marker></defs>
+<text x="80" y="74" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="40" fill="#1E293B" font-weight="700" text-anchor="start">Long Short-Term Memory (LSTM)</text>
+<text x="80" y="108" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="20" fill="#64748B" font-weight="400" text-anchor="start">A gated memory cell that learns what to keep, forget, and output — so context survives long sequences.</text>
+<rect x="70" y="185" width="650" height="378" rx="22" ry="22" fill="#F8FAFC" stroke="#0D9488" stroke-width="2.5"/>
+<text x="92" y="215" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="18" fill="#0F766E" font-weight="700" text-anchor="start">LSTM cell</text>
+<line x1="88" y1="255" x2="698" y2="255" stroke="#0D9488" stroke-width="4" stroke-linecap="round"/>
+<line x1="14" y1="255" x2="88" y2="255" stroke="#0D9488" stroke-width="4" stroke-linecap="round"/>
+<text x="16" y="241" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="18" fill="#0F766E" font-weight="700" text-anchor="start">C<tspan dy="5" font-size="12">t-1</tspan></text>
+<line x1="698" y1="255" x2="786" y2="255" stroke="#0D9488" stroke-width="4" stroke-linecap="round" marker-end="url(#aTeal)"/>
+<text x="736" y="241" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="18" fill="#0F766E" font-weight="700" text-anchor="start">C<tspan dy="5" font-size="12">t</tspan></text>
+<text x="184" y="241" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="15" fill="#0D9488" font-weight="700" text-anchor="middle">cell state</text>
+<circle cx="300" cy="255" r="21" fill="#FFFFFF" stroke="#E11D48" stroke-width="2.5"/>
+<text x="300" y="264" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="28" fill="#E11D48" font-weight="700" text-anchor="middle">×</text>
+<circle cx="470" cy="255" r="21" fill="#FFFFFF" stroke="#059669" stroke-width="2.5"/>
+<text x="470" y="263" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="30" fill="#059669" font-weight="700" text-anchor="middle">+</text>
+<circle cx="620" cy="332" r="19" fill="#FFFFFF" stroke="#7C3AED" stroke-width="2.5"/>
+<text x="620" y="340" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="24" fill="#7C3AED" font-weight="700" text-anchor="middle">×</text>
+<circle cx="620" cy="255" r="6" fill="#0D9488"/>
+<line x1="620" y1="261" x2="620" y2="313" stroke="#0D9488" stroke-width="2.5" stroke-linecap="round" marker-end="url(#aTeal)"/>
+<text x="632" y="298.5" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13" fill="#0D9488" font-weight="600" text-anchor="start">tanh</text>
+<rect x="239.0" y="395" width="122" height="70" rx="12" ry="12" fill="#FFE4E6" stroke="#E11D48" stroke-width="2"/><text x="300" y="425" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="19" fill="#E11D48" font-weight="700" text-anchor="middle">Forget</text><text x="300" y="448" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="15" fill="#1E293B" font-weight="500" text-anchor="middle">σ</text>
+<rect x="409.0" y="395" width="122" height="70" rx="12" ry="12" fill="#D1FAE5" stroke="#059669" stroke-width="2"/><text x="470" y="425" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="19" fill="#059669" font-weight="700" text-anchor="middle">Input</text><text x="470" y="448" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="15" fill="#1E293B" font-weight="500" text-anchor="middle">σ · tanh</text>
+<rect x="559.0" y="395" width="122" height="70" rx="12" ry="12" fill="#EDE9FE" stroke="#7C3AED" stroke-width="2"/><text x="620" y="425" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="19" fill="#7C3AED" font-weight="700" text-anchor="middle">Output</text><text x="620" y="448" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="15" fill="#1E293B" font-weight="500" text-anchor="middle">σ</text>
+<line x1="300" y1="393" x2="300" y2="279" stroke="#E11D48" stroke-width="2.5" stroke-linecap="round" marker-end="url(#aRose)"/>
+<line x1="470" y1="393" x2="470" y2="279" stroke="#059669" stroke-width="2.5" stroke-linecap="round" marker-end="url(#aEmer)"/>
+<line x1="620" y1="393" x2="620" y2="352" stroke="#7C3AED" stroke-width="2.5" stroke-linecap="round" marker-end="url(#aViol)"/>
+<line x1="150" y1="510" x2="660" y2="510" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="300" y1="510" x2="300" y2="469" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" marker-end="url(#aGray)"/>
+<line x1="470" y1="510" x2="470" y2="469" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" marker-end="url(#aGray)"/>
+<line x1="620" y1="510" x2="620" y2="469" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" marker-end="url(#aGray)"/>
+<line x1="150" y1="612" x2="150" y2="506" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" marker-end="url(#aGray)"/>
+<text x="150" y="634" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="16" fill="#64748B" font-weight="600" text-anchor="middle">[ h<tspan dy="5" font-size="11">t-1</tspan><tspan dy="-5">, x</tspan><tspan dy="5" font-size="11">t</tspan><tspan dy="-5"> ]</tspan></text>
+<line x1="639" y1="332" x2="698" y2="332" stroke="#7C3AED" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="698" y1="332" x2="786" y2="332" stroke="#7C3AED" stroke-width="2.5" stroke-linecap="round" marker-end="url(#aViol)"/>
+<text x="736" y="320" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="18" fill="#7C3AED" font-weight="700" text-anchor="start">h<tspan dy="5" font-size="12">t</tspan></text>
+<rect x="808" y="185" width="408" height="116" rx="14" ry="14" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+<rect x="808" y="185" width="7" height="116" rx="0" ry="0" fill="#E11D48"/>
+<circle cx="848" cy="219" r="13" fill="#E11D48"/>
+<text x="870" y="225" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="21" fill="#E11D48" font-weight="700" text-anchor="start">Forget gate</text>
+<text x="832" y="257" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="16" fill="#1E293B" font-weight="400" text-anchor="start">Erases information from the cell state</text>
+<text x="832" y="281" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="16" fill="#1E293B" font-weight="400" text-anchor="start">that is no longer relevant.</text>
+<rect x="808" y="316" width="408" height="116" rx="14" ry="14" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+<rect x="808" y="316" width="7" height="116" rx="0" ry="0" fill="#059669"/>
+<circle cx="848" cy="350" r="13" fill="#059669"/>
+<text x="870" y="356" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="21" fill="#059669" font-weight="700" text-anchor="start">Input gate</text>
+<text x="832" y="388" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="16" fill="#1E293B" font-weight="400" text-anchor="start">Writes new, relevant information into</text>
+<text x="832" y="412" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="16" fill="#1E293B" font-weight="400" text-anchor="start">the cell state.</text>
+<rect x="808" y="447" width="408" height="116" rx="14" ry="14" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+<rect x="808" y="447" width="7" height="116" rx="0" ry="0" fill="#7C3AED"/>
+<circle cx="848" cy="481" r="13" fill="#7C3AED"/>
+<text x="870" y="487" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="21" fill="#7C3AED" font-weight="700" text-anchor="start">Output gate</text>
+<text x="832" y="519" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="16" fill="#1E293B" font-weight="400" text-anchor="start">Reveals the part of memory used as the</text>
+<text x="832" y="543" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="16" fill="#1E293B" font-weight="400" text-anchor="start">hidden output.</text>
+<circle cx="86" cy="667" r="6" fill="#0D9488"/>
+<text x="100" y="672" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="19" fill="#64748B" font-weight="400" text-anchor="start" font-style="italic">Far better at long-range memory than a plain RNN — but still strictly left-to-right, one step at a time.</text>
+</svg>
