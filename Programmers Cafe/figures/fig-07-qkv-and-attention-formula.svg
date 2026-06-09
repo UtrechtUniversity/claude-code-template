@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 720 470" role="img" aria-label="Input X is projected by learned matrices into Q, K, V, which feed the attention formula softmax of Q K-transpose over root d_k times V to produce the attention output">
+<style>
+text{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;}
+.t{font-size:15px;font-weight:600;fill:#1f2430;}
+.s{font-size:12px;fill:#5b6170;}
+.f{font-size:16px;fill:#1f2430;}
+.fs{font-size:13px;fill:#1f2430;}
+</style>
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#6b6b6b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+</defs>
+
+<!-- Input X -->
+<rect x="30" y="96" width="120" height="64" rx="8" fill="#F2F1EC" stroke="#B0ADA2"/>
+<text class="t" x="90" y="122" text-anchor="middle" dominant-baseline="central">Input X</text>
+<text class="s" x="90" y="140" text-anchor="middle" dominant-baseline="central">n × d_model</text>
+
+<!-- X to W arrows -->
+<line x1="150" y1="128" x2="248" y2="63"  stroke="#6b6b6b" stroke-width="1.5" marker-end="url(#ar)"/>
+<line x1="150" y1="128" x2="248" y2="137" stroke="#6b6b6b" stroke-width="1.5" marker-end="url(#ar)"/>
+<line x1="150" y1="128" x2="248" y2="211" stroke="#6b6b6b" stroke-width="1.5" marker-end="url(#ar)"/>
+
+<!-- W matrices -->
+<rect x="250" y="36" width="150" height="54" rx="8" fill="#EEEDFE" stroke="#6B5FD0"/>
+<text class="t" x="325" y="57" text-anchor="middle" dominant-baseline="central" fill="#4b3fb0">W_Q (learned)</text>
+<text class="s" x="325" y="75" text-anchor="middle" dominant-baseline="central">d_model × d_k</text>
+<rect x="250" y="110" width="150" height="54" rx="8" fill="#EEEDFE" stroke="#6B5FD0"/>
+<text class="t" x="325" y="131" text-anchor="middle" dominant-baseline="central" fill="#4b3fb0">W_K (learned)</text>
+<text class="s" x="325" y="149" text-anchor="middle" dominant-baseline="central">d_model × d_k</text>
+<rect x="250" y="184" width="150" height="54" rx="8" fill="#EEEDFE" stroke="#6B5FD0"/>
+<text class="t" x="325" y="205" text-anchor="middle" dominant-baseline="central" fill="#4b3fb0">W_V (learned)</text>
+<text class="s" x="325" y="223" text-anchor="middle" dominant-baseline="central">d_model × d_v</text>
+
+<!-- W to QKV arrows -->
+<line x1="400" y1="63"  x2="468" y2="63"  stroke="#6b6b6b" stroke-width="1.5" marker-end="url(#ar)"/>
+<line x1="400" y1="137" x2="468" y2="137" stroke="#6b6b6b" stroke-width="1.5" marker-end="url(#ar)"/>
+<line x1="400" y1="211" x2="468" y2="211" stroke="#6b6b6b" stroke-width="1.5" marker-end="url(#ar)"/>
+
+<!-- Q K V -->
+<rect x="470" y="40" width="112" height="46" rx="8" fill="#DCF2EA" stroke="#0F6E56"/>
+<text class="t" x="526" y="57" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">Q (query)</text>
+<text class="s" x="526" y="75" text-anchor="middle" dominant-baseline="central">n × d_k</text>
+<rect x="470" y="114" width="112" height="46" rx="8" fill="#DCF2EA" stroke="#0F6E56"/>
+<text class="t" x="526" y="131" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">K (key)</text>
+<text class="s" x="526" y="149" text-anchor="middle" dominant-baseline="central">n × d_k</text>
+<rect x="470" y="188" width="112" height="46" rx="8" fill="#DCF2EA" stroke="#0F6E56"/>
+<text class="t" x="526" y="205" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">V (value)</text>
+<text class="s" x="526" y="223" text-anchor="middle" dominant-baseline="central">n × d_v</text>
+
+<!-- merge bus: Q,K,V into the formula -->
+<line x1="582" y1="63"  x2="618" y2="63"  stroke="#6b6b6b" stroke-width="1.5"/>
+<line x1="582" y1="137" x2="618" y2="137" stroke="#6b6b6b" stroke-width="1.5"/>
+<line x1="582" y1="211" x2="618" y2="211" stroke="#6b6b6b" stroke-width="1.5"/>
+<path d="M618 63 L618 288 L325 288 L325 298" fill="none" stroke="#6b6b6b" stroke-width="1.5" marker-end="url(#ar)"/>
+<text class="s" x="628" y="137" dominant-baseline="central">Q, K, V</text>
+
+<!-- attention formula box -->
+<rect x="105" y="300" width="440" height="80" rx="10" fill="#F7F6F1" stroke="#c9c6bc"/>
+<text class="f" x="153" y="345">Attention(Q, K, V) = softmax(</text>
+<text class="fs" x="425" y="332" text-anchor="middle">Q · K&#7488;</text>
+<line x1="398" y1="340" x2="452" y2="340" stroke="#1f2430" stroke-width="1"/>
+<text class="fs" x="425" y="357" text-anchor="middle">&#8730;d_k</text>
+<text class="f" x="455" y="345">)</text>
+<text class="f" x="467" y="345">· V</text>
+
+<!-- formula to output -->
+<line x1="325" y1="380" x2="325" y2="400" stroke="#6b6b6b" stroke-width="1.5" marker-end="url(#ar)"/>
+
+<!-- output -->
+<rect x="215" y="400" width="220" height="46" rx="8" fill="#DCF2EA" stroke="#0F6E56"/>
+<text class="t" x="325" y="417" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">Attention output</text>
+<text class="s" x="325" y="435" text-anchor="middle" dominant-baseline="central">n × d_v</text>
+</svg>
